@@ -7,6 +7,7 @@ import Unison.Prelude
 
 import Data.ByteString.Builder (doubleBE, word64BE, int64BE, toLazyByteString)
 import qualified Data.ByteArray as BA
+import qualified Data.Hashable
 
 import qualified Crypto.Hash as CH
 import qualified Data.ByteString as B
@@ -18,7 +19,9 @@ import qualified Data.Text as Text
 import qualified Data.Set as Set
 
 -- | Hash which uniquely identifies a Unison type or term
-newtype Hash = Hash { toBytes :: ByteString } deriving (Eq,Ord,Generic)
+newtype Hash = Hash { toBytes :: ByteString }
+  deriving stock (Eq,Ord,Generic)
+  deriving newtype (Data.Hashable.Hashable)
 
 instance Show Hash where
   show h = take 999 $ Text.unpack (base32Hex h)

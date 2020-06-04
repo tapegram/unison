@@ -26,6 +26,7 @@ import           Data.Bytes.VarInt              ( VarInt(..) )
 import qualified Data.Map                      as Map
 import           Data.List                      ( elemIndex
                                                 )
+import System.IO.Unsafe (unsafePerformIO)
 import qualified Unison.Codebase.Branch         as Branch
 import qualified Unison.Codebase.Branch.Dependencies as BD
 import           Unison.Codebase.Causal         ( Raw(..)
@@ -58,6 +59,8 @@ import           Unison.Referent               (Referent)
 import qualified Unison.Referent               as Referent
 import qualified Unison.Term                   as Term
 import qualified Unison.Type                   as Type
+import Unison.Util.PinBoard (PinBoard)
+import qualified Unison.Util.PinBoard as PinBoard
 import           Unison.Util.Star3             ( Star3 )
 import qualified Unison.Util.Star3             as Star3
 import           Unison.Util.Relation           ( Relation )
@@ -224,7 +227,16 @@ getHash :: MonadGet m => m Hash
 getHash = do
   len <- getLength
   bs <- B.copy <$> getBytes len
-  pure $ Hash.fromBytes bs
+  pure $! pinGlobalHash (Hash.fromBytes bs)
+
+globalHashPinBoard :: PinBoard Hash
+globalHashPinBoard =
+  unsafePerformIO PinBoard.new
+{-# NOINLINE globalHashPinBoard #-}
+
+pinGlobalHash :: Hash -> Hash
+pinGlobalHash =
+  unsafePerformIO . PinBoard.pin globalHashPinBoard
 
 putReference :: MonadPut m => Reference -> m ()
 putReference r = case r of
