@@ -182,7 +182,16 @@ getText :: MonadGet m => m Text
 getText = do
   len <- getLength
   bs <- B.copy <$> getBytes len
-  pure $ decodeUtf8 bs
+  pure $! pinGlobalText (decodeUtf8 bs)
+
+globalTextPinBoard :: PinBoard Text
+globalTextPinBoard =
+  unsafePerformIO PinBoard.new
+{-# NOINLINE globalTextPinBoard #-}
+
+pinGlobalText :: Text -> Text
+pinGlobalText =
+  unsafePerformIO . PinBoard.pin globalTextPinBoard
 
 skipText :: MonadGet m => m ()
 skipText = do
@@ -227,16 +236,17 @@ getHash :: MonadGet m => m Hash
 getHash = do
   len <- getLength
   bs <- B.copy <$> getBytes len
-  pure $! pinGlobalHash (Hash.fromBytes bs)
+  pure (Hash.fromBytes bs)
+  -- pure $! pinGlobalHash (Hash.fromBytes bs)
 
-globalHashPinBoard :: PinBoard Hash
-globalHashPinBoard =
-  unsafePerformIO PinBoard.new
-{-# NOINLINE globalHashPinBoard #-}
+-- globalHashPinBoard :: PinBoard Hash
+-- globalHashPinBoard =
+--   unsafePerformIO PinBoard.new
+-- {-# NOINLINE globalHashPinBoard #-}
 
-pinGlobalHash :: Hash -> Hash
-pinGlobalHash =
-  unsafePerformIO . PinBoard.pin globalHashPinBoard
+-- pinGlobalHash :: Hash -> Hash
+-- pinGlobalHash =
+--   unsafePerformIO . PinBoard.pin globalHashPinBoard
 
 putReference :: MonadPut m => Reference -> m ()
 putReference r = case r of
