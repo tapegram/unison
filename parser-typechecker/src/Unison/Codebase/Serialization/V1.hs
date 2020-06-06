@@ -236,17 +236,16 @@ getHash :: MonadGet m => m Hash
 getHash = do
   len <- getLength
   bs <- B.copy <$> getBytes len
-  pure (Hash.fromBytes bs)
-  -- pure $! pinGlobalHash (Hash.fromBytes bs)
+  pure $! pinGlobalHash (Hash.fromBytes bs)
 
--- globalHashPinBoard :: PinBoard Hash
--- globalHashPinBoard =
---   unsafePerformIO PinBoard.new
--- {-# NOINLINE globalHashPinBoard #-}
+globalHashPinBoard :: PinBoard Hash
+globalHashPinBoard =
+  unsafePerformIO PinBoard.new
+{-# NOINLINE globalHashPinBoard #-}
 
--- pinGlobalHash :: Hash -> Hash
--- pinGlobalHash =
---   unsafePerformIO . PinBoard.pin globalHashPinBoard
+pinGlobalHash :: Hash -> Hash
+pinGlobalHash =
+  unsafePerformIO . PinBoard.pin globalHashPinBoard
 
 putReference :: MonadPut m => Reference -> m ()
 putReference r = case r of
