@@ -23,9 +23,11 @@ import           Data.Bytes.Serial              ( serialize
                                                 )
 import           Data.Bytes.Signed              ( Unsigned )
 import           Data.Bytes.VarInt              ( VarInt(..) )
+import qualified Data.Hashable
 import qualified Data.Map                      as Map
 import           Data.List                      ( elemIndex
                                                 )
+import System.Environment (lookupEnv)
 import System.IO.Unsafe (unsafePerformIO)
 import qualified Unison.Codebase.Branch         as Branch
 import qualified Unison.Codebase.Branch.Dependencies as BD
@@ -181,17 +183,24 @@ putText text = do
 getText :: MonadGet m => m Text
 getText = do
   len <- getLength
-  bs <- B.copy <$> getBytes len
-  pure $! pinGlobalText (decodeUtf8 bs)
+  bs <- getBytes len
+  pure $! if shouldPinText then pinGlobalText bs else decodeUtf8 (B.copy bs)
+
+shouldPinText :: Bool
+shouldPinText =
+  isJust (unsafePerformIO (lookupEnv "UNISON_PIN_TEXT"))
 
 globalTextPinBoard :: PinBoard Text
 globalTextPinBoard =
   unsafePerformIO PinBoard.new
 {-# NOINLINE globalTextPinBoard #-}
 
-pinGlobalText :: Text -> Text
-pinGlobalText =
-  unsafePerformIO . PinBoard.pin globalTextPinBoard
+pinGlobalText :: ByteString -> Text
+pinGlobalText bytes =
+  if shouldPinWith then
+    unsafePerformIO (PinBoard.pinWith globalTextPinBoard (Data.Hashable.hash bytes) (decodeUtf8 (B.copy bytes)))
+  else
+    unsafePerformIO (PinBoard.pin globalTextPinBoard (decodeUtf8 (B.copy bytes)))
 
 skipText :: MonadGet m => m ()
 skipText = do
@@ -235,17 +244,28 @@ putHash h = do
 getHash :: MonadGet m => m Hash
 getHash = do
   len <- getLength
-  bs <- B.copy <$> getBytes len
-  pure $! pinGlobalHash (Hash.fromBytes bs)
+  bs <- getBytes len
+  pure $! if shouldPinHash then pinGlobalHash bs else Hash.fromBytes (B.copy bs)
+
+shouldPinHash :: Bool
+shouldPinHash =
+  isJust (unsafePerformIO (lookupEnv "UNISON_PIN_HASH"))
 
 globalHashPinBoard :: PinBoard Hash
 globalHashPinBoard =
   unsafePerformIO PinBoard.new
 {-# NOINLINE globalHashPinBoard #-}
 
-pinGlobalHash :: Hash -> Hash
-pinGlobalHash =
-  unsafePerformIO . PinBoard.pin globalHashPinBoard
+pinGlobalHash :: ByteString -> Hash
+pinGlobalHash bytes =
+  if shouldPinWith then
+    unsafePerformIO (PinBoard.pinWith globalHashPinBoard (Data.Hashable.hash bytes) (Hash.fromBytes (B.copy bytes)))
+  else
+    unsafePerformIO (PinBoard.pin globalHashPinBoard (Hash.fromBytes (B.copy bytes)))
+
+shouldPinWith :: Bool
+shouldPinWith =
+  isJust (unsafePerformIO (lookupEnv "UNISON_PIN_WITH"))
 
 putReference :: MonadPut m => Reference -> m ()
 putReference r = case r of

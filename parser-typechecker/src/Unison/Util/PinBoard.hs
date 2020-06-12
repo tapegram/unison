@@ -29,6 +29,7 @@ module Unison.Util.PinBoard
   ( PinBoard,
     new,
     pin,
+    pinWith,
 
     -- * For debugging
     debugDump,
@@ -62,7 +63,12 @@ new =
   liftIO (PinBoard <$> newMVar IntMap.empty)
 
 pin :: forall a m. (Eq a, Hashable a, MonadIO m) => PinBoard a -> a -> m a
-pin (PinBoard boardVar) x = liftIO do
+pin board x =
+  pinWith board (hash x) x
+
+-- | Like 'pin', but accepts a hash key manually, rather than using 'Hashable'.
+pinWith :: forall a m. (Eq a, MonadIO m) => PinBoard a -> Int -> a -> m a
+pinWith (PinBoard boardVar) n x = liftIO do
   modifyMVar boardVar \board ->
     swap <$> getCompose (IntMap.alterF alter n board)
   where
@@ -86,9 +92,6 @@ pin (PinBoard boardVar) x = liftIO do
     finalizer :: IO ()
     finalizer =
       modifyMVar_ boardVar (IntMap.alterF (maybe (pure Nothing) bucketCompact) n)
-    n :: Int
-    n =
-      hash x
 
 debugDump :: MonadIO m => (a -> Text) -> PinBoard a -> m ()
 debugDump f (PinBoard boardVar) = liftIO do
