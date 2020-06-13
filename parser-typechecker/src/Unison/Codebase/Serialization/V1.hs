@@ -64,6 +64,7 @@ import qualified Unison.Type                   as Type
 import Unison.Util.PinBoard (PinBoard)
 import qualified Unison.Util.PinBoard as PinBoard
 import qualified Unison.Util.PinBoard2 as PinBoard2
+import qualified Unison.Util.PinBoard3 as PinBoard3
 import           Unison.Util.Star3             ( Star3 )
 import qualified Unison.Util.Star3             as Star3
 import           Unison.Util.Relation           ( Relation )
@@ -263,6 +264,7 @@ pinHash bytes =
     Nothing -> theHash
     Just "IntMap" -> unsafePerformIO (PinBoard.pinWith globalHashPinBoard (Data.Hashable.hash bytes) theHash)
     Just "HashMap" -> unsafePerformIO (PinBoard2.pinWith globalHashPinBoard2 (Data.Hashable.hash bytes) theHash)
+    Just "HashTable" -> unsafePerformIO (PinBoard3.pinWith globalHashPinBoard3 (Data.Hashable.hash bytes) theHash)
     _ -> undefined
   where
     theHash = Hash.fromBytes (B.copy bytes)
@@ -281,6 +283,11 @@ globalHashPinBoard2 :: PinBoard2.PinBoard Hash
 globalHashPinBoard2 =
   unsafePerformIO PinBoard2.new
 {-# NOINLINE globalHashPinBoard2 #-}
+
+globalHashPinBoard3 :: PinBoard3.PinBoard Hash
+globalHashPinBoard3 =
+  unsafePerformIO PinBoard3.new
+{-# NOINLINE globalHashPinBoard3 #-}
 
 putReference :: MonadPut m => Reference -> m ()
 putReference r = case r of
