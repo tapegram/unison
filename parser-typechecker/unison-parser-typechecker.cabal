@@ -133,6 +133,7 @@ library
     Unison.Util.Map
     Unison.Util.Menu
     Unison.Util.PinBoard
+    Unison.Util.PinBoard2
     Unison.Util.Pretty
     Unison.Util.Range
     Unison.Util.Star3
@@ -203,6 +204,7 @@ library
     transformers,
     unison-core,
     unliftio,
+    unordered-containers,
     util,
     vector,
     unicode-show
