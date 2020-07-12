@@ -51,16 +51,16 @@ type HashTable k v =
 newtype PinBoard a
   = PinBoard (HashTable Int (Bucket a))
 
-new :: MonadIO m => m (PinBoard a)
+new :: IO (PinBoard a)
 new =
-  liftIO (PinBoard <$> HashTable.new)
+  PinBoard <$> HashTable.new
 
-pin :: forall a m. (Eq a, Hashable a, MonadIO m) => PinBoard a -> a -> m a
+pin :: forall a. (Eq a, Hashable a) => PinBoard a -> a -> IO a
 pin board x =
   pinWith board (hash x) x
 
 -- | Like 'pin', but accepts a hash key manually, rather than using 'Hashable'.
-pinWith :: forall a m. (Eq a, MonadIO m) => PinBoard a -> Int -> a -> m a
+pinWith :: forall a. Eq a => PinBoard a -> Int -> a -> IO a
 pinWith (PinBoard board) n x = liftIO do
   HashTable.mutateIO board n \case
     Nothing -> (,x) . Just <$> newBucket x finalizer
