@@ -61,15 +61,22 @@ pin board x =
 
 -- | Like 'pin', but accepts a hash key manually, rather than using 'Hashable'.
 pinWith :: forall a. Eq a => PinBoard a -> Int -> a -> IO a
-pinWith (PinBoard board) n x = liftIO do
-  HashTable.mutateIO board n \case
-    Nothing -> (,x) . Just <$> newBucket x finalizer
+pinWith (PinBoard board) n x =
+  HashTable.lookup board n >>= \case
+    Nothing -> do
+      -- TODO(mitchell) make thread-safe
+      bucket <- newBucket x finalizer
+      HashTable.insert board n bucket
+      pure x
     Just bucket ->
       bucketFind bucket x >>= \case
         -- Hash collision: the bucket has things in it, but none are the given value. Insert.
-        Nothing -> (,x) . Just <$> bucketAdd bucket x finalizer
+        Nothing -> do
+          bucket' <- bucketAdd bucket x finalizer
+          HashTable.insert board n bucket'
+          pure x
         -- The thing being inserted already exists; return it.
-        Just y -> pure (Just bucket, y)
+        Just y -> pure y
   where
     -- When each thing pinned here is garbage collected, compact its bucket.
     finalizer :: IO ()
